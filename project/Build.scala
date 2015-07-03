@@ -1,9 +1,4 @@
 import sbt._, Keys._
-import sbtrelease._
-import sbtrelease.ReleasePlugin.autoImport._
-import xerial.sbt.Sonatype._
-import ReleaseStateTransformations._
-import com.typesafe.sbt.pgp.PgpKeys
 
 object build extends Build {
 
@@ -16,36 +11,15 @@ object build extends Build {
   val modules = msgpack4zJava07Name :: Nil
 
   lazy val msgpack4zJava07 = Project("msgpack4z-java07", file(".")).settings(
-    ReleasePlugin.extraReleaseCommands ++ sonatypeSettings: _*
   ).settings(
     autoScalaLibrary := false,
     crossPaths := false,
     name := msgpack4zJava07Name,
     javacOptions in compile ++= Seq("-target", "6", "-source", "6"),
     javacOptions in (Compile, doc) ++= Seq("-locale", "en_US"),
-    commands += Command.command("updateReadme")(UpdateReadme.updateReadmeTask),
     libraryDependencies ++= (
-      ("org.msgpack" % "msgpack-core" % "0.7.0-p9") ::
       ("com.github.xuwei-k" % "msgpack4z-api" % "0.1.0") ::
       Nil
-    ),
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runClean,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      UpdateReadme.updateReadmeProcess,
-      tagRelease,
-      ReleaseStep(state => Project.extract(state).runTask(PgpKeys.publishSigned, state)._1),
-      setNextVersion,
-      commitNextVersion,
-      UpdateReadme.updateReadmeProcess,
-      ReleaseStep(state =>
-        Project.extract(state).runTask(SonatypeKeys.sonatypeReleaseAll, state)._1
-      ),
-      pushChanges
     ),
     credentials ++= PartialFunction.condOpt(sys.env.get("SONATYPE_USER") -> sys.env.get("SONATYPE_PASS")){
       case (Some(user), Some(pass)) =>
@@ -85,6 +59,8 @@ object build extends Build {
       </scm>
     ,
     description := "msgpack4z"
+  ).dependsOn(
+    ProjectRef(uri("git://github.com/msgpack/msgpack-java.git#b80b06eca"), "msgpack-core")
   )
 
 }
